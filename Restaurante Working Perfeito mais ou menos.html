@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Restaurante Online</title>
+<style>
+body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+h1 { text-align:center; }
+button { margin:5px; padding:5px 10px; }
+.categoria { margin: 20px 0; }
+.produto { margin: 5px 0; }
+#carrinho { background:white; padding:15px; border-radius:10px; }
+</style>
+</head>
+<body>
+
+<h1>🍽️ Restaurante Online</h1>
+
+<div>
+    <label>Pesquisar: <input type="text" id="busca" oninput="renderProdutos()"></label>
+</div>
+
+<div>
+    <button onclick="selecionarCategoria('Comidas')">Comidas</button>
+    <button onclick="selecionarCategoria('Aperitivos')">Aperitivos</button>
+    <button onclick="selecionarCategoria('Sobremesas')">Sobremesas</button>
+    <button onclick="selecionarCategoria('Bebidas')">Bebidas</button>
+</div>
+
+<div id="produtos" class="categoria"></div>
+
+<h2>🛒 Carrinho</h2>
+<div id="carrinho"></div>
+<button onclick="finalizar()">Finalizar & Gerar Recibo</button>
+
+<script>
+// ===== PRODUTOS =====
+const produtos = {
+    Comidas: [
+        {nome:"Pizza Margherita", preco:10}, {nome:"Pizza Pepperoni", preco:11},
+        {nome:"Salada Caprese", preco:6.5}, {nome:"Hamburguer Simples", preco:6.5},
+        {nome:"Hamburguer Duplo", preco:8}, {nome:"Lasanha Bolonhesa", preco:9},
+        {nome:"Espaguete Bolonhesa", preco:8}, {nome:"Frango Grelhado", preco:7.5},
+        {nome:"Peixe Frito", preco:8.5}, {nome:"Risotto de Cogumelos", preco:9.5},
+        {nome:"Tacos de Carne", preco:7}, {nome:"Sanduiche Club", preco:6.5},
+        {nome:"Salada Caesar", preco:5.5}, {nome:"Ovos Mexidos", preco:4}
+    ],
+    Aperitivos: [
+        {nome:"Bruschetta", preco:5.5},{nome:"Batatas Fritas", preco:3},
+        {nome:"Onion Rings", preco:3.5},{nome:"Camarao Frito", preco:7.5}
+    ],
+    Sobremesas: [
+        {nome:"Mousse Chocolate", preco:4.5},{nome:"Cheesecake", preco:5},
+        {nome:"Tiramisu", preco:5.5},{nome:"Gelado", preco:3.5},{nome:"Fruta Fresca", preco:3}
+    ],
+    Bebidas: [
+        {nome:"Agua", preco:1.5},{nome:"Refrigerante", preco:2.5},
+        {nome:"Sumo Natural", preco:3},{nome:"Cafe", preco:1.8},{nome:"Cha", preco:1.5},
+        {nome:"Smoothie", preco:3.5},{nome:"Milkshake", preco:4},{nome:"Cerveja", preco:3.5},
+        {nome:"Vinho Tinto", preco:4.5},{nome:"Vinho Branco", preco:4.5},
+        {nome:"Sangria", preco:5},{nome:"Coquetel", preco:6}
+    ]
+};
+
+// ===== CARRINHO =====
+let carrinho = JSON.parse(localStorage.getItem("carrinho")||"{}");
+let categoriaAtual = 'Comidas';
+
+// ===== FUNÇÕES =====
+function selecionarCategoria(cat){
+    categoriaAtual = cat;
+    renderProdutos();
+}
+
+function renderProdutos(){
+    const div = document.getElementById("produtos");
+    const busca = document.getElementById("busca").value.toLowerCase();
+    div.innerHTML = '';
+    produtos[categoriaAtual].forEach((p,i)=>{
+        if(p.nome.toLowerCase().includes(busca)){
+            div.innerHTML += `<div class="produto">
+                ${p.nome} (€${p.preco}) 
+                <button onclick="adicionar('${categoriaAtual}',${i})">Adicionar</button>
+            </div>`;
+        }
+    });
+}
+
+function adicionar(cat,i){
+    const p = produtos[cat][i];
+    if(!carrinho[p.nome]) carrinho[p.nome] = {q:0, preco:p.preco};
+    carrinho[p.nome].q++;
+    salvarCarrinho();
+}
+
+function remover(nome){
+    if(carrinho[nome]){
+        carrinho[nome].q--;
+        if(carrinho[nome].q<=0) delete carrinho[nome];
+        salvarCarrinho();
+    }
+}
+
+function salvarCarrinho(){
+    localStorage.setItem("carrinho", JSON.stringify(carrinho));
+    renderCarrinho();
+}
+
+function renderCarrinho(){
+    const div = document.getElementById("carrinho");
+    div.innerHTML = '';
+    let total = 0;
+    for(let item in carrinho){
+        const p = carrinho[item];
+        total += p.q * p.preco;
+        div.innerHTML += `<div>
+            ${item} x${p.q} (€${p.preco}) 
+            <button onclick="remover('${item}')">Remover</button>
+        </div>`;
+    }
+    div.innerHTML += `<b>Total: €${total.toFixed(2)}</b>`;
+}
+
+function finalizar(){
+    if(Object.keys(carrinho).length==0){
+        alert("Carrinho vazio!");
+        return;
+    }
+    let texto = "=== RECIBO ===\n";
+    let total = 0;
+    for(let item in carrinho){
+        let p = carrinho[item];
+        texto += `${item} x${p.q} = €${(p.q*p.preco).toFixed(2)}\n`;
+        total += p.q*p.preco;
+    }
+    texto += `TOTAL: €${total.toFixed(2)}`;
+    const blob = new Blob([texto], {type:"text/plain"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "recibo.txt";
+    a.click();
+    alert("Recibo gerado!");
+    carrinho = {};
+    salvarCarrinho();
+}
+
+// ===== INICIAL =====
+renderProdutos();
+renderCarrinho();
+
+</script>
+
+</body>
+</html>
